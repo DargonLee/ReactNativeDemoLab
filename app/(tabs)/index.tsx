@@ -4,6 +4,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { FlatList, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 interface TestItem {
   id: string;
@@ -95,13 +96,27 @@ export default function TabTwoScreen() {
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({}, 'background');
   const tintColor = useThemeColor({}, 'tint');
+  const router = useRouter();
 
   const filteredItems = selectedCategory === 'all' 
     ? testItems 
     : testItems.filter(item => item.category === selectedCategory);
 
+  const handleTestItemPress = (item: TestItem) => {
+    // 跳转到动态路由页面，并传递参数
+    router.push({
+      pathname: '/test/[component]' as any,
+      params: { 
+        component: item.component,
+        title: item.title,
+        description: item.description,
+        category: item.category
+      }
+    });
+  };
+
   const renderTestItem = ({ item }: { item: TestItem }) => (
-    <TouchableOpacity style={styles.testItem}>
+    <TouchableOpacity style={styles.testItem} onPress={() => handleTestItemPress(item)}>
       <View style={styles.testItemContent}>
         <View style={[styles.iconContainer, { backgroundColor: tintColor + '20' }]}>
           <Ionicons name={item.icon} size={24} color={tintColor} />
