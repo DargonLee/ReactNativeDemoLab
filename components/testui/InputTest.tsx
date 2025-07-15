@@ -1,8 +1,8 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
+import { ThemeTestProps } from '@/types/ThemeTestProps';
 import { 
   Platform, 
   StyleSheet, 
@@ -14,7 +14,7 @@ import {
   ScrollView 
 } from 'react-native';
 
-export function InputTest() {
+export function InputTest({textColor, tintColor}: ThemeTestProps) {
   const [basicText, setBasicText] = useState('');
   const [passwordText, setPasswordText] = useState('');
   const [emailText, setEmailText] = useState('');
@@ -22,10 +22,6 @@ export function InputTest() {
   const [multilineText, setMultilineText] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   
-  const textColor = useThemeColor({}, 'text');
-  const tintColor = useThemeColor({}, 'tint');
-  const backgroundColor = useThemeColor({}, 'background');
-
   const handleSubmit = () => {
     Alert.alert('提交数据', `
 基础文本: ${basicText}

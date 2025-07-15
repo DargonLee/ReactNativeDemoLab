@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { InputTest } from '@/components/testui/InputTest';
+import { ButtonTest } from '@/components/testui/ButtonTest';
 
 export default function TestDetailScreen() {
   const { component, title, description, category } = useLocalSearchParams<{
@@ -21,23 +22,10 @@ export default function TestDetailScreen() {
   const renderTestContent = () => {
     switch (component) {
       case 'ButtonTest':
-        return (
-          <View style={styles.testContent}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>按钮测试</ThemedText>
-            <TouchableOpacity style={[styles.testButton, { backgroundColor: tintColor }]}>
-              <ThemedText style={[styles.buttonText, { color: 'white' }]}>主要按钮</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.testButton, { borderColor: tintColor, borderWidth: 1 }]}>
-              <ThemedText style={[styles.buttonText, { color: tintColor }]}>次要按钮</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.testButton, { backgroundColor: '#f0f0f0' }]}>
-              <ThemedText style={[styles.buttonText, { color: textColor }]}>默认按钮</ThemedText>
-            </TouchableOpacity>
-          </View>
-        );
+        return <ButtonTest textColor={textColor} tintColor={tintColor} />;
       
       case 'InputTest':
-        return <InputTest />;
+        return <InputTest textColor={textColor} tintColor={tintColor} />;
       
       case 'ModalTest':
         return (
@@ -149,10 +137,6 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginTop: 4,
   },
-  testContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -164,15 +148,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 40,
   },
-  testButton: {
+  testContent: {
+    flex: 1,
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
