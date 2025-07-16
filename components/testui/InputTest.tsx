@@ -1,33 +1,38 @@
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { CustomAlert } from '@/components/ui/CustomAlert';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { ThemeTestProps } from '@/types/ThemeTestProps';
-import { 
-  Platform, 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity, 
-  View, 
+import {
+  Platform,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
   Alert,
   KeyboardAvoidingView,
-  ScrollView 
+  ScrollView
 } from 'react-native';
 
-export function InputTest({textColor, tintColor}: ThemeTestProps) {
+export function InputTest({ textColor, tintColor }: ThemeTestProps) {
   const [basicText, setBasicText] = useState('');
   const [passwordText, setPasswordText] = useState('');
   const [emailText, setEmailText] = useState('');
   const [phoneText, setPhoneText] = useState('');
   const [multilineText, setMultilineText] = useState('');
+  const [mixedText, setMixedText] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+
   const handleSubmit = () => {
     Alert.alert('提交数据', `
 基础文本: ${basicText}
 邮箱: ${emailText}
 手机: ${phoneText}
 多行文本: ${multilineText}
+混合字符: ${mixedText}
     `);
   };
 
@@ -47,15 +52,45 @@ export function InputTest({textColor, tintColor}: ThemeTestProps) {
     }
   };
 
+  // 汉字按2个字符计算，其他字符按1个字符计算
+  const calculateCharacterLength = (text: string): number => {
+    let length = 0;
+    // 使用 Array.from 正确处理 Unicode 码点，包括emoji
+    const characters = Array.from(text);
+
+    for (const char of characters) {
+      // 检查是否为汉字（包括基本汉字、扩展汉字等）
+      if (/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/.test(char)) {
+        length += 2; // 汉字按2个字符计算
+      } else {
+        length += 1; // 其他字符（英文、数字、emoji、符号等）按1个字符计算
+      }
+    }
+
+    return length;
+  };
+
+  const handleMixedTextChange = (text: string) => {
+    const charLength = calculateCharacterLength(text);
+
+    if (charLength > 20) {
+      setAlertMessage('输入内容超出限制！最多支持20个字符（汉字按2个字符计算，其他按1个字符计算）。');
+      setShowAlert(true);
+      return;
+    }
+
+    setMixedText(text);
+  };
+
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <ThemedView style={styles.content}>
           <ThemedText type="title" style={styles.title}>输入框测试</ThemedText>
-          
+
           {/* 基础文本输入 */}
           <View style={styles.inputGroup}>
             <ThemedText style={styles.label}>基础文本输入</ThemedText>
@@ -80,14 +115,14 @@ export function InputTest({textColor, tintColor}: ThemeTestProps) {
                 placeholderTextColor={textColor + '60'}
                 secureTextEntry={!showPassword}
               />
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.eyeButton}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Ionicons 
-                  name={showPassword ? 'eye' : 'eye-off'} 
-                  size={20} 
-                  color={textColor} 
+                <Ionicons
+                  name={showPassword ? 'eye' : 'eye-off'}
+                  size={20}
+                  color={textColor}
                 />
               </TouchableOpacity>
             </View>
@@ -136,8 +171,25 @@ export function InputTest({textColor, tintColor}: ThemeTestProps) {
             />
           </View>
 
+          {/* 混合字符输入 */}
+          <View style={styles.inputGroup}>
+            <ThemedText style={styles.label}>
+              混合字符输入 ({calculateCharacterLength(mixedText)}/20)
+            </ThemedText>
+            <TextInput
+              style={[styles.input, { color: textColor, borderColor: tintColor }]}
+              value={mixedText}
+              onChangeText={handleMixedTextChange}
+              placeholder="支持空格、emoji、汉字、英文 😊"
+              placeholderTextColor={textColor + '60'}
+            />
+            <ThemedText style={[styles.hint, { color: textColor + '80' }]}>
+              最多20个字符（汉字按2个字符计算，其他按1个字符计算）
+            </ThemedText>
+          </View>
+
           {/* 提交按钮 */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.submitButton, { backgroundColor: tintColor }]}
             onPress={handleSubmit}
           >
@@ -147,7 +199,7 @@ export function InputTest({textColor, tintColor}: ThemeTestProps) {
           </TouchableOpacity>
 
           {/* 清除按钮 */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.clearButton, { borderColor: tintColor }]}
             onPress={() => {
               setBasicText('');
@@ -155,6 +207,7 @@ export function InputTest({textColor, tintColor}: ThemeTestProps) {
               setEmailText('');
               setPhoneText('');
               setMultilineText('');
+              setMixedText('');
             }}
           >
             <ThemedText style={[styles.clearButtonText, { color: tintColor }]}>
@@ -163,6 +216,13 @@ export function InputTest({textColor, tintColor}: ThemeTestProps) {
           </TouchableOpacity>
         </ThemedView>
       </ScrollView>
+
+      <CustomAlert
+        visible={showAlert}
+        title="输入限制"
+        message={alertMessage}
+        onConfirm={() => setShowAlert(false)}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -247,5 +307,10 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  hint: {
+    fontSize: 12,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });
