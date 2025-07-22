@@ -50,6 +50,22 @@ const testItems: TestItem[] = [
     component: 'ModalTest'
   },
   {
+    id: '9',
+    title: 'Product 商品组件',
+    description: '商品展示、列表、详情',
+    icon: 'layers',
+    category: 'ui',
+    component: 'ProductTest'
+  },
+  {
+    id: '10',
+    title: '布局学习 1',
+    description: 'Flex布局',
+    icon: 'layers',
+    category: 'ui',
+    component: 'Flex1Layout'
+  },
+  {
     id: '4',
     title: 'API请求测试',
     description: '网络请求、数据获取、错误处理',
@@ -98,15 +114,15 @@ export default function TabTwoScreen() {
   const tintColor = useThemeColor({}, 'tint');
   const router = useRouter();
 
-  const filteredItems = selectedCategory === 'all' 
-    ? testItems 
+  const filteredItems = selectedCategory === 'all'
+    ? testItems
     : testItems.filter(item => item.category === selectedCategory);
 
   const handleTestItemPress = (item: TestItem) => {
     // 跳转到动态路由页面，并传递参数
     router.push({
       pathname: '/test/[component]' as any,
-      params: { 
+      params: {
         component: item.component,
         title: item.title,
         description: item.description,
@@ -143,12 +159,12 @@ export default function TabTwoScreen() {
       ]}
       onPress={() => setSelectedCategory(category.id)}
     >
-      <Ionicons 
-        name={category.icon} 
-        size={18} 
-        color={selectedCategory === category.id ? tintColor : textColor} 
+      <Ionicons
+        name={category.icon}
+        size={18}
+        color={selectedCategory === category.id ? tintColor : textColor}
       />
-      <ThemedText 
+      <ThemedText
         style={[
           styles.categoryText,
           selectedCategory === category.id && { color: tintColor }
@@ -173,8 +189,8 @@ export default function TabTwoScreen() {
 
       {/* 分类标签 */}
       <View style={styles.categoriesContainer}>
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoriesContent}
         >
