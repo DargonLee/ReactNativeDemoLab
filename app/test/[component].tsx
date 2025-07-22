@@ -9,6 +9,7 @@ import {ButtonTest} from '@/components/testui/ButtonTest';
 import {ProductTest} from '@/components/testui/ProductTest';
 import {Flex1Layout} from "@/components/testui/Flex1Layout";
 import {Flex2Layout} from "@/components/testui/Flex2Layout";
+import {Flex3Layout} from "@/components/testui/Flex3Layout";
 
 export default function TestDetailScreen() {
 	const {component, title, description, category} = useLocalSearchParams<{
@@ -46,6 +47,9 @@ export default function TestDetailScreen() {
 
 			case 'Flex2Layout':
 				return <Flex2Layout textColor={textColor} tintColor={tintColor}/>
+
+			case 'Flex3Layout':
+				return <Flex3Layout/>
 
 			case 'ApiTest':
 				return (
