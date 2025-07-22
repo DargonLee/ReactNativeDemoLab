@@ -66,6 +66,14 @@ const testItems: TestItem[] = [
     component: 'Flex1Layout'
   },
   {
+    id: '11',
+    title: '布局学习 2',
+    description: 'Flex布局',
+    icon: 'layers',
+    category: 'ui',
+    component: 'Flex2Layout'
+  },
+  {
     id: '4',
     title: 'API请求测试',
     description: '网络请求、数据获取、错误处理',

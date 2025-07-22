@@ -2,7 +2,7 @@ import React from "react";
 import {StyleSheet, View, Text} from "react-native";
 import {Image} from "expo-image";
 
-export function Flex1Layout() {
+export function Flex1Layout({textColor, tintColor}) {
 	const imageUri = "https://cn.bing.com/images/search?q=%e5%9b%be%e7%89%87&id=99E8794026CA9229880CB1784977B57B306E8AB1&FORM=IACFIR"
 	return (
 		<View>
