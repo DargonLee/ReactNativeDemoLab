@@ -1,7 +1,9 @@
-import {StyleSheet, Text, View, TouchableOpacity} from "react-native";
+import {StyleSheet, Text, View, TouchableOpacity, Pressable} from "react-native";
 import {ThemedText} from "@/components/ThemedText";
 import {ThemeTestProps} from "@/types/ThemeTestProps";
 import React from "react";
+
+const baseStyle = {width: 50, height: 50, backgroundColor: 'red'};
 
 export function ButtonTest({textColor, tintColor}: ThemeTestProps) {
 	return (
@@ -9,6 +11,10 @@ export function ButtonTest({textColor, tintColor}: ThemeTestProps) {
 			<ThemedText type="subtitle" style={styles.sectionTitle}>
 				按钮测试
 			</ThemedText>
+			<Pressable style={({pressed}) => [baseStyle, {opacity: pressed ? 0.5 : 1}]} onPress={() => {
+			}}>
+				<Text>按钮</Text>
+			</Pressable>
 			<TouchableOpacity
 				style={[styles.testButton, {backgroundColor: tintColor}]}
 			>
