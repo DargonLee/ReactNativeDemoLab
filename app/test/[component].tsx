@@ -5,11 +5,13 @@ import {Ionicons} from '@expo/vector-icons';
 import {useLocalSearchParams, useRouter} from 'expo-router';
 import {Platform, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {InputTest} from '@/components/testui/InputTest';
+import {InputTest2} from '@/components/testui/InputTest2';
 import {ButtonTest} from '@/components/testui/ButtonTest';
 import {ProductTest} from '@/components/testui/ProductTest';
 import {Flex1Layout} from "@/components/testui/Flex1Layout";
 import {Flex2Layout} from "@/components/testui/Flex2Layout";
 import {Flex3Layout} from "@/components/testui/Flex3Layout";
+import {Condition1Layout} from "@/components/testui/Condition1Layout";
 
 export default function TestDetailScreen() {
 	const {component, title, description, category} = useLocalSearchParams<{
@@ -30,6 +32,8 @@ export default function TestDetailScreen() {
 
 			case 'InputTest':
 				return <InputTest textColor={textColor} tintColor={tintColor}/>;
+			case 'InputTest2':
+				return <InputTest2/>;
 
 			case 'ModalTest':
 				return (
@@ -50,6 +54,9 @@ export default function TestDetailScreen() {
 
 			case 'Flex3Layout':
 				return <Flex3Layout/>
+
+			case 'Condition1Layout':
+				return <Condition1Layout/>
 
 			case 'ApiTest':
 				return (

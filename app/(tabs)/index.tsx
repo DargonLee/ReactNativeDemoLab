@@ -35,11 +35,19 @@ const testItems: TestItem[] = [
   },
   {
     id: '2',
-    title: '输入框测试',
+    title: '输入框测试1',
     description: '文本输入、验证、格式化等功能',
     icon: 'create',
     category: 'ui',
     component: 'InputTest'
+  },
+  {
+    id: '13',
+    title: '输入框测试2',
+    description: '文本输入最大字符',
+    icon: 'create',
+    category: 'ui',
+    component: 'InputTest2'
   },
   {
     id: '3',
@@ -80,6 +88,14 @@ const testItems: TestItem[] = [
     icon: 'layers',
     category: 'ui',
     component: 'Flex3Layout'
+  },
+  {
+    id: '14',
+    title: '条件布局学习 1',
+    description: '条件布局',
+    icon: 'layers',
+    category: 'ui',
+    component: 'Condition1Layout'
   },
   {
     id: '4',
