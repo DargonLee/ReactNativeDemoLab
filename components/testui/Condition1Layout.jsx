@@ -1,9 +1,9 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Button } from "react-native";
-import { useState, useEffect } from "react";
+import {View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Button} from "react-native";
+import {useState, useEffect} from "react";
 
-const WelcomeMessage = ({ name }) => <Text>欢迎回来, {name}!</Text>;
-const LoginButton = ({ onPress }) => <Button title="请登录" onPress={onPress} />;
+const WelcomeMessage = ({name}) => <Text>欢迎回来, {name}!</Text>;
+const LoginButton = ({onPress}) => <Button title="请登录" onPress={onPress}/>;
 
 export function Condition1Layout() {
 	const [isEnabled, setIsEnabled] = useState(false);
@@ -17,13 +17,15 @@ export function Condition1Layout() {
 
 	return (
 		<View style={styles.container}>
-			<TouchableOpacity onPress={() => setIsEnabled(!isEnabled)} style={[styles.buttonBase, isEnabled ? styles.buttonEnabled : styles.buttonDisabled]}>
-				<Text style={ styles.text }>{isEnabled ? '可点击状态' : '禁用状态'}</Text>
+			<TouchableOpacity onPress={() => setIsEnabled(!isEnabled)}
+			                  style={[styles.buttonBase, isEnabled ? styles.buttonEnabled : styles.buttonDisabled]}>
+				<Text style={styles.text}>{isEnabled ? '可点击状态' : '禁用状态'}</Text>
 			</TouchableOpacity>
-			<TextInput style={[styles.input, hasError && styles.inputError]} value={text} onChangeText={setText} placeholder="请输入至少五个字符" />
-			{isLoading && <ActivityIndicator size="large" color='#007AFF' />}
+			<TextInput style={[styles.input, hasError && styles.inputError]} value={text} onChangeText={setText}
+			           placeholder="请输入至少五个字符"/>
+			{isLoading && <ActivityIndicator size="large" color='#007AFF'/>}
 			{!isLoading && <Text>数据加载完成！</Text>}
-			{isLogin ? <WelcomeMessage name="Admin" /> : <LoginButton onPress={() => setIsLogin(true)} />}
+			{isLogin ? <WelcomeMessage name="Admin"/> : <LoginButton onPress={() => setIsLogin(true)}/>}
 		</View>
 	);
 }
