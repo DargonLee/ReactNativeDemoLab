@@ -22,6 +22,7 @@ const categories = [
   { id: 'storage', name: '存储功能', icon: 'save' as keyof typeof Ionicons.glyphMap },
   { id: 'animation', name: '动画效果', icon: 'play' as keyof typeof Ionicons.glyphMap },
   { id: 'device', name: '设备功能', icon: 'phone-portrait' as keyof typeof Ionicons.glyphMap },
+  { id: 'charts', name: '图表组件', icon: 'bar-chart' as keyof typeof Ionicons.glyphMap },
 ];
 
 const testItems: TestItem[] = [
@@ -136,6 +137,14 @@ const testItems: TestItem[] = [
     icon: 'location',
     category: 'device',
     component: 'LocationTest'
+  },
+  {
+    id: '15',
+    title: '图表组件测试',
+    description: '图表组件、折线图、柱状图、饼图等',
+    icon: 'bar-chart',
+    category: 'charts',
+    component: 'LineChart'
   },
 ];
 

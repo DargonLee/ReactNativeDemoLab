@@ -12,6 +12,7 @@ import {Flex1Layout} from "@/components/testui/Flex1Layout";
 import {Flex2Layout} from "@/components/testui/Flex2Layout";
 import {Flex3Layout} from "@/components/testui/Flex3Layout";
 import {Condition1Layout} from "@/components/testui/Condition1Layout";
+import {LineChart} from "@/components/charts/LineChart";
 
 export default function TestDetailScreen() {
 	const {component, title, description, category} = useLocalSearchParams<{
@@ -97,6 +98,9 @@ export default function TestDetailScreen() {
 						<ThemedText style={styles.placeholder}>这里将展示位置服务功能</ThemedText>
 					</View>
 				);
+
+			case 'LineChart':
+				return <LineChart/>;
 
 			default:
 				return (
