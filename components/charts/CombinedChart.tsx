@@ -70,8 +70,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   height = 300,
 
   // 内边距
-  paddingLeft = 30,
-  paddingRight = 30,
+  paddingLeft = 60,
+  paddingRight = 60,
   paddingTop = 20,
   paddingBottom = 60,
 
