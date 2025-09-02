@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import Svg, {
   G,
@@ -19,7 +19,49 @@ const { width: screenWidth } = Dimensions.get('window');
  * 通用SVG组合图表组件
  * 支持柱状图 + 折线图的组合显示，双Y轴
  */
-const CombinedChart = ({
+type CombinedChartProps = {
+  data: Array<Record<string, any>>;
+  width?: number;
+  height?: number;
+  paddingLeft?: number;
+  paddingRight?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
+  barColor?: string;
+  barWidth?: number;
+  barOpacity?: number;
+  barBorderRadius?: number;
+  useBarGradient?: boolean;
+  barGradientColors?: string[];
+  barGradientOpacities?: number[];
+  lineColor?: string;
+  lineWidth?: number;
+  showLinePoints?: boolean;
+  pointRadius?: number;
+  pointColor?: string;
+  pointStrokeColor?: string;
+  pointStrokeWidth?: number;
+  leftAxisLabel?: string;
+  rightAxisLabel?: string;
+  bottomAxisLabel?: string;
+  leftAxisColor?: string;
+  rightAxisColor?: string;
+  axisLabelColor?: string;
+  axisLabelSize?: number;
+  tickLabelSize?: number;
+  showGrid?: boolean;
+  gridColor?: string;
+  gridOpacity?: number;
+  enableInteraction?: boolean;
+  backgroundColor?: string;
+  containerStyle?: any;
+  onPointPress?: (point: Record<string, any>, index: number, type: 'bar' | 'line') => void;
+  showLegend?: boolean;
+  legendBarLabel?: string;
+  legendLineLabel?: string;
+};
+
+const CombinedChart: React.FC<CombinedChartProps> = ({
   // 数据相关
   data = [],
 
@@ -83,6 +125,7 @@ const CombinedChart = ({
 }) => {
 
   const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
   // 图表绘制区域尺寸
   const plotWidth = width - paddingLeft - paddingRight;
@@ -98,13 +141,18 @@ const CombinedChart = ({
   }
 
   // 提取数据字段名（自动检测）
-  const sampleItem = data[0];
-  const keys = Object.keys(sampleItem);
+  const { keys, xKey, barKey, lineKey } = useMemo(() => {
+    const sampleItem = data[0];
+    const keysInner = Object.keys(sampleItem);
+    return {
+      keys: keysInner,
+      xKey: keysInner[0],
+      barKey: keysInner[1],
+      lineKey: keysInner[2],
+    } as { keys: string[]; xKey: string; barKey: string; lineKey: string };
+  }, [data]);
 
   // 假设第一个字段是X轴，第二个是柱状图数据，第三个是折线图数据
-  const xKey = keys[0];
-  const barKey = keys[1];
-  const lineKey = keys[2];
 
   // 计算数据范围
   const xValues = data.map(d => d[xKey]);
@@ -146,6 +194,10 @@ const CombinedChart = ({
           ry={actualBorderRadius}
           onPress={enableInteraction ? () => {
             setSelectedPoint(index);
+            // 计算并设置tooltip位置（柱顶稍上方）
+            const pointX = getX(point[xKey]);
+            const pointY = getBarY(point[barKey]);
+            setTooltipPos({ x: pointX, y: pointY });
             onPointPress && onPointPress(point, index, 'bar');
           } : undefined}
         />
@@ -188,6 +240,8 @@ const CombinedChart = ({
           strokeWidth={pointStrokeWidth}
           onPress={enableInteraction ? () => {
             setSelectedPoint(index);
+            // 设置tooltip位置（折线点位置）
+            setTooltipPos({ x, y });
             onPointPress && onPointPress(point, index, 'line');
           } : undefined}
         />
@@ -349,6 +403,36 @@ const CombinedChart = ({
     setSelectedPoint(null);
   };
 
+  // 计算tooltip最终位置（避免越界）
+  const getTooltipStyle = () => {
+    if (selectedPoint === null || !tooltipPos) return { display: 'none' } as const;
+
+    const tooltipWidth = 200;
+    const tooltipHeight = 76;
+    const margin = 8;
+
+    // 将SVG内坐标换算到容器坐标（容器内相对定位）
+    let left = tooltipPos.x - tooltipWidth / 2;
+    let top = tooltipPos.y - tooltipHeight - margin;
+
+    // 可视区限制（在图表绘制区域内）
+    const minLeft = paddingLeft;
+    const maxLeft = paddingLeft + plotWidth - tooltipWidth;
+    const minTop = paddingTop;
+
+    if (left < minLeft) left = minLeft;
+    if (left > maxLeft) left = maxLeft;
+    if (top < minTop) top = tooltipPos.y + margin; // 放到点下方
+
+    return {
+      position: 'absolute' as const,
+      left,
+      top,
+      width: tooltipWidth,
+      height: tooltipHeight,
+    };
+  };
+
   return (
     <View style={[styles.container, containerStyle]}>
       <View style={[styles.chartContainer, { backgroundColor }]}>
@@ -434,28 +518,28 @@ const CombinedChart = ({
             {bottomAxisLabel}
           </SvgText>
         </Svg>
-      </View>
 
-      {/* 选中点信息 */}
-      {enableInteraction && selectedPoint !== null && (
-        <View style={styles.infoContainer}>
-          <Text style={styles.infoText}>
-            {xKey}: {data[selectedPoint][xKey]}
-          </Text>
-          <Text style={styles.infoText}>
-            {legendBarLabel}: {data[selectedPoint][barKey]}
-          </Text>
-          <Text style={styles.infoText}>
-            {legendLineLabel}: {data[selectedPoint][lineKey]}
-          </Text>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleCloseInfo}
-          >
-            <Text style={styles.closeButtonText}>×</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+        {/* 悬浮信息气泡：放在图表容器内，使用绝对定位 */}
+        {enableInteraction && selectedPoint !== null && tooltipPos && (
+          <View style={[styles.tooltipContainer, getTooltipStyle()]}>
+            <Text style={styles.infoText}>
+              {xKey}: {String(data[selectedPoint][xKey])}
+            </Text>
+            <Text style={styles.infoText}>
+              {legendBarLabel}: {String(data[selectedPoint][barKey])}
+            </Text>
+            <Text style={styles.infoText}>
+              {legendLineLabel}: {String(data[selectedPoint][lineKey])}
+            </Text>
+            <TouchableOpacity
+              style={styles.tooltipClose}
+              onPress={() => setSelectedPoint(null)}
+            >
+              <Text style={styles.closeButtonText}>×</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 };
@@ -518,6 +602,7 @@ const styles = StyleSheet.create({
   chartContainer: {
     borderRadius: 12,
     padding: 15,
+    position: 'relative',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -546,27 +631,28 @@ const styles = StyleSheet.create({
     color: '#555',
     fontWeight: '500',
   },
-  infoContainer: {
+  tooltipContainer: {
     backgroundColor: '#fff',
-    padding: 15,
+    padding: 12,
     borderRadius: 8,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    position: 'relative',
-    minWidth: 200,
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#eee',
+    zIndex: 10,
   },
   infoText: {
     fontSize: 14,
     color: '#333',
     marginBottom: 4,
   },
-  closeButton: {
+  tooltipClose: {
     position: 'absolute',
-    top: 5,
-    right: 10,
+    top: 6,
+    right: 8,
     width: 20,
     height: 20,
     justifyContent: 'center',
