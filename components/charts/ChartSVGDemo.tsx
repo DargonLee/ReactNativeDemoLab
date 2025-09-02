@@ -15,10 +15,13 @@ import Svg, {
 const { width: screenWidth } = Dimensions.get('window');
 
 const ChartSVGDemo = ({ 
-  showLinePoints = false,  // 控制是否显示折线图的圆点
-  pointRadius = 3,         // 圆点半径
-  pointColor = '#1ABC9C',  // 圆点颜色
-  pointStrokeWidth = 2     // 圆点描边宽度
+  showLinePoints = false,     // 控制是否显示折线图的圆点
+  pointRadius = 3,            // 圆点半径
+  pointColor = '#1ABC9C',     // 圆点颜色
+  pointStrokeWidth = 2,       // 圆点描边宽度
+  useBarGradient = false,     // 是否使用柱状图渐变
+  barColor = '#3498DB',       // 柱状图颜色（纯色时使用）
+  barBorderRadius = 4         // 柱状图顶部圆角半径
 } = {}) => {
   // 图表尺寸配置
   const chartWidth = screenWidth - 40;
@@ -66,11 +69,11 @@ const ChartSVGDemo = ({
   const maxTime = Math.max(...data.map(d => d.time));
 
   // 坐标转换函数
-  const getX = (time) => paddingLeft + (time / maxTime) * plotWidth;
-  const getTorqueY = (torque) => paddingTop + plotHeight - ((torque - minTorque) / (maxTorque - minTorque)) * plotHeight;
-  const getRpmY = (rpm) => paddingTop + plotHeight - ((rpm - minRpm) / (maxRpm - minRpm)) * plotHeight;
+  const getX = (time: number) => paddingLeft + (time / maxTime) * plotWidth;
+  const getTorqueY = (torque: number) => paddingTop + plotHeight - ((torque - minTorque) / (maxTorque - minTorque)) * plotHeight;
+  const getRpmY = (rpm: number) => paddingTop + plotHeight - ((rpm - minRpm) / (maxRpm - minRpm)) * plotHeight;
 
-  // 生成柱状图
+  // 生成柱状图 - 支持圆角和颜色选择
   const renderBars = () => {
     const barWidth = plotWidth / data.length * 0.6;
     
@@ -79,6 +82,9 @@ const ChartSVGDemo = ({
       const y = getTorqueY(point.torque);
       const height = plotHeight - (y - paddingTop);
       
+      // 如果高度太小，不显示圆角
+      const actualBorderRadius = height < barBorderRadius * 2 ? 0 : barBorderRadius;
+      
       return (
         <Rect
           key={`bar-${index}`}
@@ -86,8 +92,10 @@ const ChartSVGDemo = ({
           y={y}
           width={barWidth}
           height={height}
-          fill="url(#torqueGradient)"
+          fill={useBarGradient ? "url(#torqueGradient)" : barColor}
           opacity={0.8}
+          rx={actualBorderRadius}  // 水平圆角半径
+          ry={actualBorderRadius}  // 垂直圆角半径
           onPress={() => setSelectedPoint(index)}
         />
       );
@@ -280,12 +288,14 @@ const ChartSVGDemo = ({
       
       <View style={styles.chartContainer}>
         <Svg width={chartWidth} height={chartHeight}>
-          <Defs>
-            <LinearGradient id="torqueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <Stop offset="0%" stopColor="#3498DB" stopOpacity={1} />
-              <Stop offset="100%" stopColor="#5DADE2" stopOpacity={0.6} />
-            </LinearGradient>
-          </Defs>
+          {useBarGradient && (
+            <Defs>
+              <LinearGradient id="torqueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#3498DB" stopOpacity={1} />
+                <Stop offset="100%" stopColor="#5DADE2" stopOpacity={0.6} />
+              </LinearGradient>
+            </Defs>
+          )}
           
           {/* 网格线 */}
           <G>
@@ -354,7 +364,7 @@ const ChartSVGDemo = ({
       {/* 图例 */}
       <View style={styles.legendContainer}>
         <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#3498DB' }]} />
+          <View style={[styles.legendColor, { backgroundColor: useBarGradient ? '#3498DB' : barColor }]} />
           <Text style={styles.legendText}>扭矩 (N·m)</Text>
         </View>
         <View style={styles.legendItem}>

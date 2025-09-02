@@ -162,6 +162,14 @@ const testItems: TestItem[] = [
     category: 'charts',
     component: 'ChartSVGDemo'
   },
+  {
+    id: '18',
+    title: '图表组件测试4',
+    description: '图表组件、折线图、柱状图、饼图等',
+    icon: 'bar-chart',
+    category: 'charts',
+    component: 'CombinedChartDemo'
+  },
 ];
 
 export default function TabTwoScreen() {

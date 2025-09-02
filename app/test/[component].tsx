@@ -15,6 +15,7 @@ import {Condition1Layout} from "@/components/testui/Condition1Layout";
 import {LineChartTest} from "@/components/charts/LineChartTest";
 import {ChartKitDemo} from "@/components/charts/ChartKitDemo";
 import {ChartSVGDemo} from "@/components/charts/ChartSVGDemo";
+import {CombinedChartDemo} from "@/components/charts/CombinedChartDemo";
 
 export default function TestDetailScreen() {
 	const {component, title, description, category} = useLocalSearchParams<{
@@ -109,6 +110,9 @@ export default function TestDetailScreen() {
 
 			case 'ChartSVGDemo':
 				return <ChartSVGDemo/>;
+
+			case 'CombinedChartDemo':
+				return <CombinedChartDemo/>;
 
 			default:
 				return (
