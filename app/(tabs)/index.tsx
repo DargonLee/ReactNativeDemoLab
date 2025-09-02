@@ -144,7 +144,23 @@ const testItems: TestItem[] = [
     description: '图表组件、折线图、柱状图、饼图等',
     icon: 'bar-chart',
     category: 'charts',
-    component: 'LineChart'
+    component: 'LineChartTest'
+  },
+  {
+    id: '16',
+    title: '图表组件测试2',
+    description: '图表组件、折线图、柱状图、饼图等',
+    icon: 'bar-chart',
+    category: 'charts',
+    component: 'ChartKitDemo'
+  },
+  {
+    id: '17',
+    title: '图表组件测试3',
+    description: '图表组件、折线图、柱状图、饼图等',
+    icon: 'bar-chart',
+    category: 'charts',
+    component: 'ChartSVGDemo'
   },
 ];
 
