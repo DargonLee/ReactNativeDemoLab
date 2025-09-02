@@ -612,8 +612,9 @@ const styles = StyleSheet.create({
   },
   legendContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '60%',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    columnGap: 36,
     marginBottom: 20,
   },
   legendItem: {
@@ -621,9 +622,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   legendColor: {
-    width: 16,
-    height: 16,
-    borderRadius: 2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     marginRight: 8,
   },
   legendText: {
