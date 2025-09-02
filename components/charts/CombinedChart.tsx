@@ -22,34 +22,35 @@ const { width: screenWidth } = Dimensions.get('window');
 const CombinedChart = ({
   // 数据相关
   data = [],
-  
+
   // 图表尺寸
   width = screenWidth - 40,
   height = 300,
-  
+
   // 内边距
-  paddingLeft = 60,
-  paddingRight = 60,
+  paddingLeft = 30,
+  paddingRight = 30,
   paddingTop = 20,
   paddingBottom = 60,
-  
+
   // 柱状图配置
   barColor = '#3498DB',
+  barWidth = 10,
   barOpacity = 0.8,
   barBorderRadius = 4,
   useBarGradient = false,
   barGradientColors = ['#3498DB', '#5DADE2'],
   barGradientOpacities = [1, 0.6],
-  
+
   // 折线图配置
   lineColor = '#1ABC9C',
-  lineWidth = 2.5,
+  lineWidth = 1.5,
   showLinePoints = false,
   pointRadius = 3,
   pointColor = '#1ABC9C',
   pointStrokeColor = '#fff',
   pointStrokeWidth = 2,
-  
+
   // 坐标轴配置
   leftAxisLabel = '扭矩 (N·m)',
   rightAxisLabel = '转速 (rpm)',
@@ -59,30 +60,30 @@ const CombinedChart = ({
   axisLabelColor = '#666',
   axisLabelSize = 12,
   tickLabelSize = 10,
-  
+
   // 网格配置
   showGrid = true,
   gridColor = '#e0e0e0',
   gridOpacity = 0.5,
-  
+
   // 交互配置
   enableInteraction = true,
-  
+
   // 样式配置
   backgroundColor = 'white',
   containerStyle = {},
-  
+
   // 回调函数
   onPointPress = null,
-  
+
   // 图例配置
   showLegend = true,
   legendBarLabel = '柱状数据',
   legendLineLabel = '折线数据'
 }) => {
-  
-  const [selectedPoint, setSelectedPoint] = useState(null);
-  
+
+  const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
+
   // 图表绘制区域尺寸
   const plotWidth = width - paddingLeft - paddingRight;
   const plotHeight = height - paddingTop - paddingBottom;
@@ -99,7 +100,7 @@ const CombinedChart = ({
   // 提取数据字段名（自动检测）
   const sampleItem = data[0];
   const keys = Object.keys(sampleItem);
-  
+
   // 假设第一个字段是X轴，第二个是柱状图数据，第三个是折线图数据
   const xKey = keys[0];
   const barKey = keys[1];
@@ -109,7 +110,7 @@ const CombinedChart = ({
   const xValues = data.map(d => d[xKey]);
   const barValues = data.map(d => d[barKey]);
   const lineValues = data.map(d => d[lineKey]);
-  
+
   const xMin = Math.min(...xValues);
   const xMax = Math.max(...xValues);
   const barMin = 0; // 柱状图通常从0开始
@@ -118,21 +119,20 @@ const CombinedChart = ({
   const lineMax = Math.max(...lineValues);
 
   // 坐标转换函数
-  const getX = (value) => paddingLeft + ((value - xMin) / (xMax - xMin)) * plotWidth;
-  const getBarY = (value) => paddingTop + plotHeight - ((value - barMin) / (barMax - barMin)) * plotHeight;
-  const getLineY = (value) => paddingTop + plotHeight - ((value - lineMin) / (lineMax - lineMin)) * plotHeight;
+  const getX = (value: number) => paddingLeft + ((value - xMin) / (xMax - xMin)) * plotWidth;
+  const getBarY = (value: number) => paddingTop + plotHeight - ((value - barMin) / (barMax - barMin)) * plotHeight;
+  const getLineY = (value: number) => paddingTop + plotHeight - ((value - lineMin) / (lineMax - lineMin)) * plotHeight;
 
   // 生成柱状图
   const renderBars = () => {
-    const barWidth = plotWidth / data.length * 0.6;
-    
+
     return data.map((point, index) => {
       const x = getX(point[xKey]) - barWidth / 2;
       const y = getBarY(point[barKey]);
       const barHeight = plotHeight - (y - paddingTop);
-      
+
       const actualBorderRadius = barHeight < barBorderRadius * 2 ? 0 : barBorderRadius;
-      
+
       return (
         <Rect
           key={`bar-${index}`}
@@ -159,7 +159,7 @@ const CombinedChart = ({
     data.forEach((point, index) => {
       const x = getX(point[xKey]);
       const y = getLineY(point[lineKey]);
-      
+
       if (index === 0) {
         path += `M ${x} ${y}`;
       } else {
@@ -172,11 +172,11 @@ const CombinedChart = ({
   // 生成折线图点
   const renderLinePoints = () => {
     if (!showLinePoints) return null;
-    
+
     return data.map((point, index) => {
       const x = getX(point[xKey]);
       const y = getLineY(point[lineKey]);
-      
+
       return (
         <Circle
           key={`point-${index}`}
@@ -198,7 +198,7 @@ const CombinedChart = ({
   // 生成网格线
   const renderGrid = () => {
     if (!showGrid) return null;
-    
+
     const lines = [];
 
     // 水平网格线
@@ -247,7 +247,7 @@ const CombinedChart = ({
     for (let i = 0; i <= 5; i++) {
       const value = (barMax / 5) * (5 - i);
       const y = paddingTop + (plotHeight / 5) * i;
-      
+
       labels.push(
         <SvgText
           key={`left-label-${i}`}
@@ -266,7 +266,7 @@ const CombinedChart = ({
     for (let i = 0; i <= 4; i++) {
       const value = lineMin + (lineMax - lineMin) / 4 * (4 - i);
       const y = paddingTop + (plotHeight / 4) * i;
-      
+
       labels.push(
         <SvgText
           key={`right-label-${i}`}
@@ -289,7 +289,7 @@ const CombinedChart = ({
       if (dataIndex < data.length) {
         const value = data[dataIndex][xKey];
         const x = getX(value);
-        
+
         labels.push(
           <SvgText
             key={`bottom-label-${i}`}
@@ -321,7 +321,7 @@ const CombinedChart = ({
           stroke={leftAxisColor}
           strokeWidth={1}
         />
-        
+
         {/* 右Y轴 */}
         <Line
           x1={paddingLeft + plotWidth}
@@ -331,7 +331,7 @@ const CombinedChart = ({
           stroke={rightAxisColor}
           strokeWidth={1}
         />
-        
+
         {/* X轴 */}
         <Line
           x1={paddingLeft}
@@ -352,6 +352,22 @@ const CombinedChart = ({
   return (
     <View style={[styles.container, containerStyle]}>
       <View style={[styles.chartContainer, { backgroundColor }]}>
+
+        {/* 图例 */}
+        {showLegend && (
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendColor, { backgroundColor: useBarGradient ? barGradientColors[0] : barColor }]} />
+              <Text style={styles.legendText}>{legendBarLabel}</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendColor, { backgroundColor: lineColor }]} />
+              <Text style={styles.legendText}>{legendLineLabel}</Text>
+            </View>
+          </View>
+        )}
+        
+        {/* 图表 */}
         <Svg width={width} height={height}>
           {useBarGradient && (
             <Defs>
@@ -361,16 +377,16 @@ const CombinedChart = ({
               </LinearGradient>
             </Defs>
           )}
-          
+
           {/* 网格线 */}
           <G>{renderGrid()}</G>
-          
+
           {/* 坐标轴 */}
           {renderAxes()}
-          
+
           {/* 柱状图 */}
           <G>{renderBars()}</G>
-          
+
           {/* 折线图 */}
           <G>
             <Path
@@ -381,10 +397,10 @@ const CombinedChart = ({
             />
             {renderLinePoints()}
           </G>
-          
+
           {/* 坐标轴标签 */}
           <G>{renderAxisLabels()}</G>
-          
+
           {/* 轴标题 */}
           <SvgText
             x={paddingLeft - 40}
@@ -396,7 +412,7 @@ const CombinedChart = ({
           >
             {leftAxisLabel}
           </SvgText>
-          
+
           <SvgText
             x={paddingLeft + plotWidth + 40}
             y={paddingTop + plotHeight / 2}
@@ -407,7 +423,7 @@ const CombinedChart = ({
           >
             {rightAxisLabel}
           </SvgText>
-          
+
           <SvgText
             x={paddingLeft + plotWidth / 2}
             y={paddingTop + plotHeight + 45}
@@ -419,20 +435,6 @@ const CombinedChart = ({
           </SvgText>
         </Svg>
       </View>
-
-      {/* 图例 */}
-      {showLegend && (
-        <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: useBarGradient ? barGradientColors[0] : barColor }]} />
-            <Text style={styles.legendText}>{legendBarLabel}</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: lineColor }]} />
-            <Text style={styles.legendText}>{legendLineLabel}</Text>
-          </View>
-        </View>
-      )}
 
       {/* 选中点信息 */}
       {enableInteraction && selectedPoint !== null && (
@@ -462,25 +464,26 @@ const CombinedChart = ({
 CombinedChart.propTypes = {
   // 数据
   data: PropTypes.arrayOf(PropTypes.object).isRequired,
-  
+
   // 尺寸
   width: PropTypes.number,
   height: PropTypes.number,
-  
+
   // 内边距
   paddingLeft: PropTypes.number,
   paddingRight: PropTypes.number,
   paddingTop: PropTypes.number,
   paddingBottom: PropTypes.number,
-  
+
   // 柱状图
   barColor: PropTypes.string,
+  barWidth: PropTypes.number,
   barOpacity: PropTypes.number,
   barBorderRadius: PropTypes.number,
   useBarGradient: PropTypes.bool,
   barGradientColors: PropTypes.arrayOf(PropTypes.string),
   barGradientOpacities: PropTypes.arrayOf(PropTypes.number),
-  
+
   // 折线图
   lineColor: PropTypes.string,
   lineWidth: PropTypes.number,
@@ -489,18 +492,18 @@ CombinedChart.propTypes = {
   pointColor: PropTypes.string,
   pointStrokeColor: PropTypes.string,
   pointStrokeWidth: PropTypes.number,
-  
+
   // 标签
   leftAxisLabel: PropTypes.string,
   rightAxisLabel: PropTypes.string,
   bottomAxisLabel: PropTypes.string,
   legendBarLabel: PropTypes.string,
   legendLineLabel: PropTypes.string,
-  
+
   // 交互
   enableInteraction: PropTypes.bool,
   onPointPress: PropTypes.func,
-  
+
   // 样式
   containerStyle: PropTypes.object,
   backgroundColor: PropTypes.string,

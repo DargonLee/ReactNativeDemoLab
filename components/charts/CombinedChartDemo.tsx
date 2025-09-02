@@ -12,8 +12,6 @@ const CombinedChartDemo = () => {
         { time: 10, torque: 120, rpm: 2.0 },
         { time: 12, torque: 100, rpm: 2.2 },
         { time: 14, torque: 80, rpm: 2.5 },
-        { time: 16, torque: 60, rpm: 2.8 },
-        { time: 18, torque: 40, rpm: 3.0 },
     ];
 
     return (
@@ -47,8 +45,8 @@ const CombinedChartDemo = () => {
 
                 // 交互配置
                 enableInteraction={true}
-                onPointPress={(point, index, type) => {
-                    console.log('点击了', type, '数据:', point);
+                onPointPress={(point: any, index: any, type: any) => {
+                    return console.log('点击了', type, '数据:', point);
                 }}
 
                 // 样式配置
