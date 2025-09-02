@@ -70,8 +70,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   height = 300,
 
   // 内边距
-  paddingLeft = 60,
-  paddingRight = 60,
+  paddingLeft = 30,
+  paddingRight = 30,
   paddingTop = 20,
   paddingBottom = 60,
 
@@ -450,7 +450,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             </View>
           </View>
         )}
-        
+
         {/* 图表 */}
         <Svg width={width} height={height}>
           {useBarGradient && (
@@ -487,23 +487,21 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
           {/* 轴标题 */}
           <SvgText
-            x={paddingLeft - 40}
-            y={paddingTop + plotHeight / 2}
+            x={paddingLeft - 5 }
+            y={paddingTop - 10}
             fontSize={axisLabelSize}
             fill={leftAxisColor}
             textAnchor="middle"
-            transform={`rotate(-90, ${paddingLeft - 40}, ${paddingTop + plotHeight / 2})`}
           >
             {leftAxisLabel}
           </SvgText>
 
           <SvgText
-            x={paddingLeft + plotWidth + 40}
-            y={paddingTop + plotHeight / 2}
+            x={paddingLeft + plotWidth}
+            y={paddingTop - 10}
             fontSize={axisLabelSize}
             fill={rightAxisColor}
             textAnchor="middle"
-            transform={`rotate(90, ${paddingLeft + plotWidth + 40}, ${paddingTop + plotHeight / 2})`}
           >
             {rightAxisLabel}
           </SvgText>
