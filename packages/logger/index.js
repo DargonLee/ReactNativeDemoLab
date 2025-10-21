@@ -22,6 +22,7 @@ let logQueue = [];
 let flushTimer = null;
 
 const CONFIG = {
+  NEW_ARCH_ENABLED: false,
   MAX_MESSAGE_LENGTH: 5000,
   FLUSH_INTERVAL_MS: 5000,
   MAX_QUEUE_SIZE: 50,
@@ -133,7 +134,7 @@ function setLogLevel(level) {
   // NativeLogger.setLevel(LogLevelString[level] || 'INFO');
 }
 
-// 4. 核心日志写入函数 (内部使用)
+// 核心日志写入函数 (内部使用)
 /**
  * 内部函数，用于处理所有日志
  * @param {number} level - 数字日志级别
@@ -146,7 +147,7 @@ function write(level, message, context = {}) {
     return;
   }
 
-  // A. 开发者友好：在开发模式下，也在控制台打印
+  // 在开发模式下，也在控制台打印
   const levelString = LogLevelString[level] || "INFO";
   const moduleName = (context && context.moduleName) || null;
   const prefix = moduleName
@@ -156,6 +157,7 @@ function write(level, message, context = {}) {
   let logMessage = message;
   let logContext = { ...context };
 
+  // 日志处理
   if (message instanceof Error) {
     logMessage = message.message;
     logContext.stack = message.stack;
@@ -167,15 +169,10 @@ function write(level, message, context = {}) {
     logMessage = truncateString(logMessage, CONFIG.MAX_MESSAGE_LENGTH);
   }
 
-  // D. 发送到原生层
   // 将模块名写入上下文，便于原生层区分来源模块
   const ctxModuleName = (context && context.moduleName) || null;
   if (ctxModuleName && !logContext.moduleName) {
     logContext.moduleName = ctxModuleName;
-  }
-  // 标识来源为 React Native
-  if (!logContext.platform) {
-    logContext.platform = "RN";
   }
 
   const logEntry = {
@@ -195,11 +192,15 @@ function write(level, message, context = {}) {
           : console.log;
       logMethod(logEntry);
     }
-    logQueue.push(logEntry);
-    if (logQueue.length >= CONFIG.MAX_QUEUE_SIZE) {
-      flushQueue();
-    } else if (!flushTimer) {
-      flushTimer = setTimeout(flushQueue, CONFIG.FLUSH_INTERVAL_MS);
+    if (CONFIG.NEW_ARCH_ENABLED) {
+      logQueue.push(logEntry);
+      if (logQueue.length >= CONFIG.MAX_QUEUE_SIZE) {
+        flushQueue();
+      } else if (!flushTimer) {
+        flushTimer = setTimeout(flushQueue, CONFIG.FLUSH_INTERVAL_MS);
+      }
+    } else {
+      NativeLogger.log(logEntry);
     }
   } catch (e) {
     console.error("Logger: 写入原生日志失败", e, {
