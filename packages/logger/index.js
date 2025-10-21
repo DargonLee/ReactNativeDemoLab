@@ -1,4 +1,4 @@
-import { NativeModules } from 'react-native';
+import { NativeModules, AppState } from "react-native";
 
 // 定义日志级别
 export const LogLevel = {
@@ -11,17 +11,23 @@ export const LogLevel = {
 };
 
 const LogLevelString = {
-  [LogLevel.DEBUG]: 'DEBUG',
-  [LogLevel.INFO]: 'INFO',
-  [LogLevel.WARN]: 'WARN',
-  [LogLevel.ERROR]: 'ERROR',
-  [LogLevel.FATAL]: 'FATAL',
+  [LogLevel.DEBUG]: "DEBUG",
+  [LogLevel.INFO]: "INFO",
+  [LogLevel.WARN]: "WARN",
+  [LogLevel.ERROR]: "ERROR",
+  [LogLevel.FATAL]: "FATAL",
 };
 
-// 配置
+let logQueue = [];
+let flushTimer = null;
+
 const CONFIG = {
   MAX_MESSAGE_LENGTH: 5000,
+  FLUSH_INTERVAL_MS: 5000,
+  MAX_QUEUE_SIZE: 50,
 };
+
+let currentLogLevel = __DEV__ ? LogLevel.DEBUG : LogLevel.INFO;
 
 // 获取原生模块
 // 我们使用一个代理(proxy)来安全地处理原生模块
@@ -41,14 +47,42 @@ const NativeLogger = NativeModules.NativeLogManager
       },
       logBatch: (logs) => {
         if (__DEV__) {
-          console.warn('NativeLogManager 未链接。日志仅在控制台打印:', logs);
+          console.warn("NativeLogManager 未链接。日志仅在控制台打印:", logs);
         }
       },
       setLevel: () => {}, // 空操作
     };
 
-// 配置
-let currentLogLevel = __DEV__ ? LogLevel.DEBUG : LogLevel.INFO;
+const handleAppStateChange = (nextAppState) => {
+  if (nextAppState === "background") {
+    flushQueue();
+  }
+};
+AppState.addEventListener("change", handleAppStateChange);
+
+/** 刷新日志队列，批量发送到原生层 */
+function flushQueue() {
+  if (logQueue.length === 0) {
+    return;
+  }
+
+  // 复制并清空队列
+  const logsToSend = [...logQueue];
+  logQueue = [];
+
+  // 取消定时器
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+
+  // 批量发送
+  try {
+    NativeLogger.logBatch(logsToSend);
+  } catch (e) {
+    console.error("Logger: 批量写入原生日志失败", e, logsToSend);
+  }
+}
 
 /**
  * 截断字符串到指定长度
@@ -58,7 +92,9 @@ function truncateString(str, maxLength) {
     return str;
   }
   const half = Math.floor((maxLength - 20) / 2);
-  return `${str.slice(0, half)}\n...[截断 ${str.length - maxLength} 字符]...\n${str.slice(-half)}`;
+  return `${str.slice(0, half)}\n...[截断 ${
+    str.length - maxLength
+  } 字符]...\n${str.slice(-half)}`;
 }
 
 /**
@@ -66,19 +102,19 @@ function truncateString(str, maxLength) {
  */
 function safeStringify(obj, maxLength) {
   const seen = new WeakSet();
-  
+
   try {
     const str = JSON.stringify(obj, (key, value) => {
       // 处理循环引用
-      if (typeof value === 'object' && value !== null) {
+      if (typeof value === "object" && value !== null) {
         if (seen.has(value)) {
-          return '[Circular]';
+          return "[Circular]";
         }
         seen.add(value);
       }
       return value;
     });
-    
+
     return truncateString(str, maxLength);
   } catch (error) {
     return `[序列化失败: ${error.message}]`;
@@ -92,7 +128,7 @@ function safeStringify(obj, maxLength) {
  */
 function setLogLevel(level) {
   currentLogLevel = level;
-  
+
   // (可选) 同时通知原生层
   // NativeLogger.setLevel(LogLevelString[level] || 'INFO');
 }
@@ -107,45 +143,25 @@ function setLogLevel(level) {
 function write(level, message, context = {}) {
   // 关键：在 JS 端进行级别过滤
   if (level < currentLogLevel) {
-    return; // 级别太低，直接跳过，不调用桥接
+    return;
   }
 
   // A. 开发者友好：在开发模式下，也在控制台打印
-  const levelString = LogLevelString[level] || 'INFO';
-  if (__DEV__) {
-    const logMethod =
-      level === LogLevel.WARN
-        ? console.warn
-        : level >= LogLevel.ERROR
-        ? console.error
-        : console.log;
-        
-    const moduleName =
-      (context && (context.module || context.moduleName || context.scope)) || null;
-    const prefix = moduleName ? `[${moduleName}][${levelString}]` : `[${levelString}]`;
-    logMethod(context, prefix, message);
-  }
+  const levelString = LogLevelString[level] || "INFO";
+  const moduleName = (context && context.moduleName) || null;
+  const prefix = moduleName
+    ? `[${moduleName}][${levelString}]`
+    : `[${levelString}]`;
 
-  // B. 处理 Error 对象
-  // 如果传入的是一个 Error 对象，我们自动提取 stack 和 message
   let logMessage = message;
   let logContext = { ...context };
-  
+
   if (message instanceof Error) {
     logMessage = message.message;
-    logContext.stack = message.stack; // 自动添加堆栈信息
-    logContext.errorName = message.name; // 自动添加错误类型
+    logContext.stack = message.stack;
+    logContext.errorName = message.name;
   }
-
-  // C. 确保 message 是字符串
-  if (typeof logMessage !== 'string') {
-    try {
-      logMessage = JSON.stringify(logMessage);
-    } catch (e) {
-      logMessage = '[[无法序列化的日志消息]]';
-    }
-  }
-  if (typeof logMessage !== 'string') {
+  if (typeof logMessage !== "string") {
     logMessage = safeStringify(logMessage, CONFIG.MAX_MESSAGE_LENGTH);
   } else {
     logMessage = truncateString(logMessage, CONFIG.MAX_MESSAGE_LENGTH);
@@ -153,35 +169,46 @@ function write(level, message, context = {}) {
 
   // D. 发送到原生层
   // 将模块名写入上下文，便于原生层区分来源模块
-  const ctxModuleName =
-    (context && (context.moduleName)) || null;
+  const ctxModuleName = (context && context.moduleName) || null;
   if (ctxModuleName && !logContext.moduleName) {
     logContext.moduleName = ctxModuleName;
   }
   // 标识来源为 React Native
   if (!logContext.platform) {
-    logContext.platform = 'RN';
+    logContext.platform = "RN";
   }
 
-  // 组合为原生侧可读的单字符串：前缀 + 消息 + 上下文
-  const header = ctxModuleName ? `[${ctxModuleName}][${levelString}]` : `[${levelString}]`;
-  const ctxStr = safeStringify(logContext, CONFIG.MAX_MESSAGE_LENGTH);
-  const nativeMessage = `${header} ${logMessage}\ncontext:${ctxStr}`;
+  const logEntry = {
+    level: prefix,
+    message: logMessage,
+    context: logContext,
+    timestamp: new Date().toISOString(),
+  };
 
   try {
-    // 原生侧只需要一个字符串进行打印；保留第一个参数级别以兼容可能存在的签名
-    NativeLogger.log(nativeMessage, null);
+    if (__DEV__) {
+      const logMethod =
+        level === LogLevel.WARN
+          ? console.warn
+          : level >= LogLevel.ERROR
+          ? console.error
+          : console.log;
+      logMethod(logEntry);
+    }
+    logQueue.push(logEntry);
+    if (logQueue.length >= CONFIG.MAX_QUEUE_SIZE) {
+      flushQueue();
+    } else if (!flushTimer) {
+      flushTimer = setTimeout(flushQueue, CONFIG.FLUSH_INTERVAL_MS);
+    }
   } catch (e) {
-    // 如果日志系统本身出错，我们只能在控制台打印了
-    console.error('Logger: 写入原生日志失败', e, {
+    console.error("Logger: 写入原生日志失败", e, {
       level: levelString,
-      message: nativeMessage,
-      context: logContext,
+      logEntry: logEntry,
     });
   }
 }
 
-// 5. 导出公共 API
 const Logger = {
   // 导出级别常量，方便外部使用
   LogLevel,
@@ -193,7 +220,7 @@ const Logger = {
   debug: (message, context) => {
     write(LogLevel.DEBUG, message, context);
   },
-  
+
   info: (message, context) => {
     write(LogLevel.INFO, message, context);
   },
@@ -205,7 +232,7 @@ const Logger = {
   error: (message, context) => {
     write(LogLevel.ERROR, message, context);
   },
-  
+
   fatal: (message, context) => {
     write(LogLevel.FATAL, message, context);
   },

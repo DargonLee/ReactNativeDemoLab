@@ -1,153 +1,92 @@
 import React, { useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import Logger, { LogLevel } from '@/packages/logger';
 
-export function LoggerTest({ textColor, tintColor }) {
-  const [consoleOn, setConsoleOn] = useState(true);
-  const [bridgeOn, setBridgeOn] = useState(true);
+// 根据当前 logger/index.js 的实现：仅提供 setLogLevel 与五种级别方法
+// 本测试面板侧重验证：
+// 1. 级别过滤
+// 2. Error 对象自动提取 stack/name
+// 3. 长消息截断逻辑
+// 4. 上下文中循环引用的安全处理 (Circular)
+// 5. 不可序列化值 (BigInt) 触发的失败兜底
+// 6. 非字符串 message 的序列化
+
+export function LoggerTest({ textColor = '#222', tintColor = '#2d7ff9' }) {
   const L = Logger;
 
-  // 探测可用的增强 API（兼容当前 logger/index.js 未提供的情况）
-  const supports = {
-    withContext: typeof L.withContext === 'function',
-    setDefaultContext: typeof L.setDefaultContext === 'function',
-    setConsoleEnabled: typeof L.setConsoleEnabled === 'function',
-    setBridgeEnabled: typeof L.setBridgeEnabled === 'function',
-    getLogLevel: typeof L.getLogLevel === 'function',
-    isEnabled: typeof L.isEnabled === 'function',
-  };
-
-  // 当没有 withContext 时，使用本地封装实现上下文合并
-  function createChildLogger(baseContext) {
+  // 简易子 logger（模拟模块名与作用域）
+  const apiLogger = useMemo(() => {
+    const base = { scope: 'api', moduleName: 'Auth' };
     return {
-      debug: (message, context) =>
-        L.debug(message, { ...baseContext, ...context }),
-      info: (message, context) =>
-        L.info(message, { ...baseContext, ...context }),
-      warn: (message, context) =>
-        L.warn(message, { ...baseContext, ...context }),
-      error: (message, context) =>
-        L.error(message, { ...baseContext, ...context }),
-      fatal: (message, context) =>
-        L.fatal(message, { ...baseContext, ...context }),
+      debug: (m, c) => L.debug(m, { ...base, ...c }),
+      info: (m, c) => L.info(m, { ...base, ...c }),
+      warn: (m, c) => L.warn(m, { ...base, ...c }),
+      error: (m, c) => L.error(m, { ...base, ...c }),
+      fatal: (m, c) => L.fatal(m, { ...base, ...c }),
     };
-  }
+  }, []);
 
-  const apiLogger = useMemo(
-    () =>
-      supports.withContext
-        ? L.withContext({ scope: 'api', moduleName: 'Auth' })
-        : createChildLogger({ scope: 'api', moduleName: 'Auth' }),
-    []
-  );
+  // 当前级别本地状态（Logger 未提供 getLogLevel，因此手动同步）
+  const [currentLevel, setCurrentLevel] = useState(__DEV__ ? LogLevel.DEBUG : LogLevel.INFO);
 
-  const handleSetDefaultContext = () => {
-    if (supports.setDefaultContext) {
-      L.setDefaultContext({
-        appVersion: '1.0.0',
-        env: __DEV__ ? 'dev' : 'prod',
-      });
-      L.info('设置默认上下文', {
-        screen: 'LoggerTest',
-        moduleName: 'LoggerTest',
-      });
-    } else {
-      // 兼容旧版：仅提示
-      L.info('当前 Logger 不支持默认上下文 API', {
-        screen: 'LoggerTest',
-        moduleName: 'LoggerTest',
-      });
+  const setLevel = (level) => {
+    L.setLogLevel(level);
+    setCurrentLevel(level);
+    L.info(`LogLevel 已切换为 ${level}`, { moduleName: 'LoggerTest' });
+  };
+
+  // 级别过滤演示：当切到 WARN 后再触发 debug/info 看不到（Native层不会调用，DEV 控制台也不会打印）
+  const demoAllLevels = () => {
+    L.debug('DEBUG 日志示例', { moduleName: 'LoggerTest', step: 'start' });
+    L.info('INFO 日志示例', { moduleName: 'LoggerTest' });
+    L.warn('WARN 日志示例', { moduleName: 'LoggerTest' });
+    L.error('ERROR 日志示例', { moduleName: 'LoggerTest' });
+    L.fatal('FATAL 日志示例', { moduleName: 'LoggerTest' });
+  };
+
+  // Error 对象演示
+  const demoErrorObject = () => {
+    try {
+      throw new Error('模拟抛出的网络错误');
+    } catch (e) {
+      L.error(e, { requestId: 'REQ-1001', moduleName: 'LoggerTest' });
     }
   };
 
-  const handleToggleConsole = () => {
-    const next = !consoleOn;
-    if (supports.setConsoleEnabled) {
-      setConsoleOn(next);
-      L.setConsoleEnabled(next);
-      L.info(`consoleEnabled=${next}`, { moduleName: 'LoggerTest' });
-    } else {
-      L.warn('当前 Logger 不支持 consoleEnabled 开关', {
-        moduleName: 'LoggerTest',
-      });
-    }
+  // 长消息截断：构造 6000+ 字符串
+  const demoLongMessage = () => {
+    const long = 'A'.repeat(3000) + '\nMIDDLE' + 'B'.repeat(3000) + 'END';
+    L.info(long, { moduleName: 'LoggerTest', type: 'longMessage' });
   };
 
-  const handleToggleBridge = () => {
-    const next = !bridgeOn;
-    if (supports.setBridgeEnabled) {
-      setBridgeOn(next);
-      L.setBridgeEnabled(next);
-      L.info(`bridgeEnabled=${next}`, { moduleName: 'LoggerTest' });
-    } else {
-      L.warn('当前 Logger 不支持 bridgeEnabled 开关', {
-        moduleName: 'LoggerTest',
-      });
-    }
+  // 循环引用上下文演示
+  const demoCircularContext = () => {
+    const a = { name: 'root' };
+    const b = { parent: a };
+    a.child = b; // 构成循环
+    L.debug('包含循环引用的上下文', { moduleName: 'LoggerTest', data: a });
   };
 
-  const logAllLevels = () => {
-    L.debug('这是一个 DEBUG 日志', {
-      screen: 'LoggerTest',
-      userId: 123,
-      moduleName: 'LoggerTest',
-    });
-    L.info('这是一个 INFO 日志', {
-      action: 'click',
-      btn: 'logAllLevels',
-      moduleName: 'LoggerTest',
-    });
-    L.warn('这是一个 WARN 日志', {
-      reason: 'just-a-warning',
-      moduleName: 'LoggerTest',
-    });
-    L.error('这是一个 ERROR 日志', { code: 'E1001', moduleName: 'LoggerTest' });
-    L.fatal('这是一个 FATAL 日志', { code: 'F9999', moduleName: 'LoggerTest' });
+  // 不可序列化值 (BigInt) 演示
+  const demoBigIntContext = () => {
+    const ctx = { moduleName: 'LoggerTest', bigCounter: 10n };
+    L.info('上下文包含 BigInt', ctx);
   };
 
-  const logErrorObject = () => {
-    const err = new Error('模拟错误：网络请求失败');
-    L.error(err, { requestId: 'REQ-001', moduleName: 'LoggerTest' });
+  // 非字符串 message（对象）演示
+  const demoObjectMessage = () => {
+    L.warn({ msg: '对象作为 message', ts: Date.now(), ok: true }, { moduleName: 'LoggerTest' });
   };
 
-  const logChildLogger = () => {
-    apiLogger.info('子 logger：请求成功', { url: '/login' });
-    apiLogger.warn('子 logger：响应慢', { duration: 1200 });
+  // 子 logger 演示
+  const demoChildLogger = () => {
+    apiLogger.info('子 logger 请求成功', { url: '/login' });
+    apiLogger.warn('子 logger 响应慢', { duration: 1450 });
   };
-
-  const setLevelInfo = () => {
-    L.setLogLevel(LogLevel.INFO);
-    setCurrentLevel(LogLevel.INFO);
-  };
-
-  const setLevelDebug = () => {
-    L.setLogLevel(LogLevel.DEBUG);
-    setCurrentLevel(LogLevel.DEBUG);
-  };
-
-  const [currentLevel, setCurrentLevel] = useState(
-    supports.getLogLevel
-      ? L.getLogLevel()
-      : __DEV__
-        ? LogLevel.DEBUG
-        : LogLevel.INFO
-  );
-  const debugEnabled = supports.isEnabled
-    ? L.isEnabled(LogLevel.DEBUG)
-    : LogLevel.DEBUG >= currentLevel;
 
   const Button = ({ title, onPress }) => (
-    <TouchableOpacity
-      style={[styles.button, { backgroundColor: tintColor }]}
-      onPress={onPress}
-    >
-      <Text style={[styles.buttonText, { color: '#fff' }]}>{title}</Text>
+    <TouchableOpacity style={[styles.button, { backgroundColor: tintColor }]} onPress={onPress}>
+      <Text style={styles.buttonText}>{title}</Text>
     </TouchableOpacity>
   );
 
@@ -155,35 +94,33 @@ export function LoggerTest({ textColor, tintColor }) {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={[styles.title, { color: textColor }]}>Logger 测试面板</Text>
       <Text style={[styles.desc, { color: textColor }]}>
-        当前级别: {currentLevel}，DEBUG启用: {String(debugEnabled)}
+        当前级别: {currentLevel} (DEBUG=0, INFO=1, WARN=2, ERROR=3, FATAL=4)
+      </Text>
+      <Text style={[styles.desc, { color: textColor }]}>
+        验证点：过滤 / Error 自动展开 / 截断 / 循环引用 / BigInt 兜底 / 对象 message
       </Text>
 
       <View style={styles.row}>
-        <Button title="log: all levels" onPress={logAllLevels} />
-        <Button title="log: Error对象" onPress={logErrorObject} />
+        <Button title="日志: 全部级别" onPress={demoAllLevels} />
+        <Button title="日志: Error对象" onPress={demoErrorObject} />
+        <Button title="日志: 长消息截断" onPress={demoLongMessage} />
       </View>
-
       <View style={styles.row}>
-        <Button title="子logger: API" onPress={logChildLogger} />
-        <Button title="设置默认上下文" onPress={handleSetDefaultContext} />
+        <Button title="日志: 循环上下文" onPress={demoCircularContext} />
+        <Button title="日志: BigInt上下文" onPress={demoBigIntContext} />
+        <Button title="日志: 对象message" onPress={demoObjectMessage} />
       </View>
-
-      {supports.setConsoleEnabled && supports.setBridgeEnabled && (
-        <View style={styles.row}>
-          <Button
-            title={`切换console(${consoleOn ? '开' : '关'})`}
-            onPress={handleToggleConsole}
-          />
-          <Button
-            title={`切换bridge(${bridgeOn ? '开' : '关'})`}
-            onPress={handleToggleBridge}
-          />
-        </View>
-      )}
-
       <View style={styles.row}>
-        <Button title="级别设为 INFO" onPress={setLevelInfo} />
-        <Button title="级别设为 DEBUG" onPress={setLevelDebug} />
+        <Button title="子Logger演示" onPress={demoChildLogger} />
+      </View>
+      <View style={styles.row}>
+        <Button title="级别设为 DEBUG" onPress={() => setLevel(LogLevel.DEBUG)} />
+        <Button title="级别设为 INFO" onPress={() => setLevel(LogLevel.INFO)} />
+        <Button title="级别设为 WARN" onPress={() => setLevel(LogLevel.WARN)} />
+      </View>
+      <View style={styles.row}>
+        <Button title="级别设为 ERROR" onPress={() => setLevel(LogLevel.ERROR)} />
+        <Button title="级别设为 FATAL" onPress={() => setLevel(LogLevel.FATAL)} />
       </View>
     </ScrollView>
   );
@@ -209,12 +146,13 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   button: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 8,
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
+    color: '#fff',
   },
 });
