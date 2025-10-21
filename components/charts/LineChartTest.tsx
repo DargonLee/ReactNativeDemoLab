@@ -229,4 +229,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export {LineChartTest};
+export { LineChartTest };

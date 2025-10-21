@@ -170,6 +170,14 @@ const testItems: TestItem[] = [
     category: 'charts',
     component: 'CombinedChartDemo'
   },
+  {
+    id: '19',
+    title: 'Logger 日志测试',
+    description: '运行时开关、默认上下文、子logger演示',
+    icon: 'radio-button-on',
+    category: 'ui',
+    component: 'LoggerTest'
+  },
 ];
 
 export default function TabTwoScreen() {

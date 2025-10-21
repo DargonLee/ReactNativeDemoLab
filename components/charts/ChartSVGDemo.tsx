@@ -92,7 +92,7 @@ const ChartSVGDemo = ({
           y={y}
           width={barWidth}
           height={height}
-          fill={useBarGradient ? "url(#torqueGradient)" : barColor}
+          fill={useBarGradient ? 'url(#torqueGradient)' : barColor}
           opacity={0.8}
           rx={actualBorderRadius}  // 水平圆角半径
           ry={actualBorderRadius}  // 垂直圆角半径
@@ -475,4 +475,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export {ChartSVGDemo};
+export { ChartSVGDemo };

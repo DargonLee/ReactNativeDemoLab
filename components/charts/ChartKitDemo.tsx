@@ -1,13 +1,13 @@
-import React from 'react'
-import { ScrollView, StatusBar, Dimensions, Text } from 'react-native'
+import React from 'react';
+import { ScrollView, StatusBar, Dimensions, Text } from 'react-native';
 import {
   LineChart,
   BarChart,
   PieChart,
   ProgressChart,
   ContributionGraph
-} from 'react-native-chart-kit'
-import { data, contributionData, pieChartData, progressChartData } from '@/components/charts/data'
+} from 'react-native-chart-kit';
+import { data, contributionData, pieChartData, progressChartData } from '@/components/charts/data';
 
 const chartConfigs = [
   {
@@ -78,15 +78,15 @@ const chartConfigs = [
     backgroundGradientTo: '#ff3e03',
     color: (opacity = 1) => `rgba(${0}, ${0}, ${0}, ${opacity})`
   }
-]
+];
 
 export class ChartKitDemo extends React.Component {
   renderTabBar() {
-    return <StatusBar hidden/>
+    return <StatusBar hidden/>;
   }
   render() {
-    const width = Dimensions.get('window').width
-    const height = 220
+    const width = Dimensions.get('window').width;
+    const height = 220;
     return (
       <ScrollView>
         {chartConfigs.map(chartConfig => {
@@ -95,11 +95,11 @@ export class ChartKitDemo extends React.Component {
             marginVertical: 10,
             textAlign: 'center',
             fontSize: 16
-          }
+          };
           const graphStyle = {
             marginVertical: 8,
             ...chartConfig.style
-          }
+          };
           return (
             <ScrollView
               key={Math.random()}
@@ -160,9 +160,9 @@ export class ChartKitDemo extends React.Component {
                 style={graphStyle}
               />
             </ScrollView>
-          )
+          );
         })}
       </ScrollView>
-    )
+    );
   }
 }

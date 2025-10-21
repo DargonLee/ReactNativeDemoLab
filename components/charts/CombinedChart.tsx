@@ -20,7 +20,7 @@ const { width: screenWidth } = Dimensions.get('window');
  * 支持柱状图 + 折线图的组合显示，双Y轴
  */
 type CombinedChartProps = {
-  data: Array<Record<string, any>>;
+  data: Record<string, any>[];
   width?: number;
   height?: number;
   paddingLeft?: number;
@@ -188,7 +188,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           y={y}
           width={barWidth}
           height={barHeight}
-          fill={useBarGradient ? "url(#barGradient)" : barColor}
+          fill={useBarGradient ? 'url(#barGradient)' : barColor}
           opacity={barOpacity}
           rx={actualBorderRadius}
           ry={actualBorderRadius}
