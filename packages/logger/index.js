@@ -20,6 +20,7 @@ const LogLevelString = {
 
 let logQueue = [];
 let flushTimer = null;
+let appStateSubscription = null;
 
 const CONFIG = {
   NEW_ARCH_ENABLED: false,
@@ -54,12 +55,24 @@ const NativeLogger = NativeModules.NativeLogManager
       setLevel: () => {}, // 空操作
     };
 
-const handleAppStateChange = (nextAppState) => {
-  if (nextAppState === "background") {
-    flushQueue();
+// 监听应用状态变化
+const setupAppStateListener = () => {
+  if (appStateSubscription) {
+    return;
+  }
+  appStateSubscription = AppState.addEventListener("change", (nextAppState) => {
+    if (nextAppState === "background" || nextAppState === "inactive") {
+      flushQueue();
+    }
+  });
+};
+// 移除应用状态监听
+const removeAppStateListener = () => {
+  if (appStateSubscription) {
+    appStateSubscription.remove();
+    appStateSubscription = null;
   }
 };
-AppState.addEventListener("change", handleAppStateChange);
 
 /** 刷新日志队列，批量发送到原生层 */
 function flushQueue() {
@@ -85,22 +98,18 @@ function flushQueue() {
   }
 }
 
-/**
- * 截断字符串到指定长度
- */
+// 截断字符串到指定长度
 function truncateString(str, maxLength) {
   if (str.length <= maxLength) {
     return str;
   }
-  const half = Math.floor((maxLength - 20) / 2);
+  const half = Math.floor((maxLength - 30) / 2);
   return `${str.slice(0, half)}\n...[截断 ${
     str.length - maxLength
   } 字符]...\n${str.slice(-half)}`;
 }
 
-/**
- * 安全地序列化对象，处理循环引用
- */
+// 安全地序列化对象，处理循环引用
 function safeStringify(obj, maxLength) {
   const seen = new WeakSet();
 
@@ -113,12 +122,52 @@ function safeStringify(obj, maxLength) {
         }
         seen.add(value);
       }
+      // 处理特殊类型
+      if (typeof value === "bigint") {
+        return `[BigInt: ${value.toString()}]`;
+      }
+      if (typeof value === "function") {
+        return `[Function: ${value.name || 'anonymous'}]`;
+      }
+      if (typeof value === "symbol") {
+        return `[Symbol: ${value.toString()}]`;
+      }
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+
       return value;
-    });
+    }, 2);
 
     return truncateString(str, maxLength);
   } catch (error) {
     return `[序列化失败: ${error.message}]`;
+  }
+}
+
+// 创建子 Logger
+function createLogger(defaultContext = {}) {
+  return {
+    debug: (message, context) => write(LogLevel.DEBUG, message, { ...defaultContext, ...context }),
+    info: (message, context) => write(LogLevel.INFO, message, { ...defaultContext, ...context }),
+    warn: (message, context) => write(LogLevel.WARN, message, { ...defaultContext, ...context }),
+    error: (message, context) => write(LogLevel.ERROR, message, { ...defaultContext, ...context }),
+    fatal: (message, context) => write(LogLevel.FATAL, message, { ...defaultContext, ...context }),
+  };
+}
+
+// 初始化应用状态监听
+function init() {
+  setupAppStateListener();
+}
+
+// 销毁应用状态监听
+function destory() {
+  flushQueue();
+  removeAppStateListener();
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
   }
 }
 
@@ -134,6 +183,13 @@ function setLogLevel(level) {
   // NativeLogger.setLevel(LogLevelString[level] || 'INFO');
 }
 
+/**
+ * 获取当前日志级别
+ */
+function getLogLevel() {
+  return currentLogLevel;
+}
+
 // 核心日志写入函数 (内部使用)
 /**
  * 内部函数，用于处理所有日志
@@ -142,7 +198,6 @@ function setLogLevel(level) {
  * @param {object} context - 附加上下文
  */
 function write(level, message, context = {}) {
-  // 关键：在 JS 端进行级别过滤
   if (level < currentLogLevel) {
     return;
   }
@@ -214,29 +269,32 @@ const Logger = {
   // 导出级别常量，方便外部使用
   LogLevel,
 
-  // 导出配置函数
+  // 设置日志级别
   setLogLevel,
 
-  // 导出各个级别的日志方法
-  debug: (message, context) => {
-    write(LogLevel.DEBUG, message, context);
-  },
+  // 导出获取当前日志级别函数
+  getLogLevel,
 
-  info: (message, context) => {
-    write(LogLevel.INFO, message, context);
-  },
+  // 创建子 Logger
+  createLogger,
 
-  warn: (message, context) => {
-    write(LogLevel.WARN, message, context);
-  },
+  // 初始化应用状态监听
+  init,
 
-  error: (message, context) => {
-    write(LogLevel.ERROR, message, context);
-  },
+  // 销毁应用状态监听
+  destroy,
 
-  fatal: (message, context) => {
-    write(LogLevel.FATAL, message, context);
-  },
+  // 清空日志队列
+  flush: flushQueue,
+
+  // 日志方法
+  debug: (message, context) => write(LogLevel.DEBUG, message, context),
+  info: (message, context) => write(LogLevel.INFO, message, context),
+  warn: (message, context) => write(LogLevel.WARN, message, context),
+  error: (message, context) => write(LogLevel.ERROR, message, context),
+  fatal: (message, context) => write(LogLevel.FATAL, message, context),
 };
+
+init();
 
 export default Logger;
