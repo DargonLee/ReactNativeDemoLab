@@ -282,7 +282,7 @@ const Logger = {
   init,
 
   // 销毁应用状态监听
-  destroy,
+  destory,
 
   // 清空日志队列
   flush: flushQueue,
